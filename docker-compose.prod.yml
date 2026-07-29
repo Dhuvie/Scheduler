@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scheduler_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scheduler}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scheduler_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-scheduler_db}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scheduler} -d ${POSTGRES_DB:-scheduler_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: scheduler_redis_prod
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scheduler_api_prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-scheduler}:${POSTGRES_PASSWORD:-scheduler_pass}@postgres:5432/${POSTGRES_DB:-scheduler_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3001
+      NODE_ENV: production
+    env_file:
+      - .env
+    command: >
+      sh -c "npx prisma migrate deploy && npm run start"
+
+  backend-worker:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scheduler_worker_prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-scheduler}:${POSTGRES_PASSWORD:-scheduler_pass}@postgres:5432/${POSTGRES_DB:-scheduler_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ENV: production
+    env_file:
+      - .env
+    command: npm run worker:start
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scheduler_frontend_prod
+    restart: always
+    depends_on:
+      - backend-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Set NEXT_PUBLIC_API_URL to the public URL of your backend or keep localhost if testing locally
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    env_file:
+      - .env
+
+volumes:
+  postgres_data_prod:
+  redis_data_prod:

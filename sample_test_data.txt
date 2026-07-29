@@ -1,0 +1,70 @@
+=========================================
+TESTING DATA FOR REACHINBOX ASSIGNMENT
+=========================================
+
+You can use this file to test the "Upload List" button! 
+Since the frontend uses a powerful Regex, it will automatically ignore all this text and only extract the 6 email addresses below into the recipient chips.
+
+--- TEST RECIPIENT LIST ---
+test.user1@example.com
+demo.receiver@startup.io
+john.doe@enterprise.com
+jane.smith@agency.co
+dhruv.test@ethereal.email
+grader@reachinbox.com
+
+=========================================
+SAMPLE SUBJECTS & BODIES TO COPY/PASTE
+=========================================
+
+--- TEMPLATE 1: Marketing Follow-up ---
+
+[SUBJECT]
+You're invited: Mastering Asynchronous System Design
+
+[BODY]
+Hi there,
+
+I wanted to personally invite you to our upcoming technical webinar next Thursday at 10:00 AM PST. 
+
+We will be diving deep into distributed systems, focusing specifically on how to build robust, fault-tolerant job schedulers using Redis and message queues. Given your recent work in backend architecture, I thought this would be right up your alley.
+
+Let me know if you'd like me to reserve a spot for you!
+
+Best,
+Dhruv Narayan Bajaj
+
+
+--- TEMPLATE 2: Sales Outreach ---
+
+[SUBJECT]
+Still thinking about it? We saved your cart!
+
+[BODY]
+Hello!
+
+We noticed that you left a few items in your shopping cart earlier today. We know life gets busy, so we went ahead and saved them for you.
+
+As a small thank you for shopping with us, we'd like to offer you 15% off your entire order if you complete your purchase within the next 24 hours. Just use the code SAVE15 at checkout.
+
+Cheers,
+Customer Success Team
+
+
+--- TEMPLATE 3: System Alert ---
+
+[SUBJECT]
+⚠️ URGENT: Scheduled Downtime for Database Migration
+
+[BODY]
+Scheduled Maintenance Notice
+
+Please be advised that we will be performing a critical database migration this weekend.
+
+When: Sunday, 2:00 AM - 4:00 AM EST
+Impact: The dashboard and API will be temporarily unavailable. However, the background worker queues will automatically pause and resume once the migration is complete.
+
+No action is required on your part.
+
+Thanks,
+Infrastructure Team
