@@ -7,8 +7,9 @@ A production-grade email scheduling system built with Node.js/TypeScript on the 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Backend](#backend)
+2. [Features Implemented](#features-implemented)
+3. [Architecture](#architecture)
+4. [Backend](#backend)
    - [Stack](#backend-stack)
    - [Directory Structure](#backend-directory-structure)
    - [API Reference](#api-reference)
@@ -22,8 +23,9 @@ A production-grade email scheduling system built with Node.js/TypeScript on the 
    - [Authentication](#authentication)
 5. [Data Model](#data-model)
 6. [Environment Variables](#environment-variables)
-7. [Local Development](#local-development)
-8. [Production Checklist](#production-checklist)
+7. [Running with Docker](#running-with-docker)
+8. [Local Development](#local-development)
+9. [Production Checklist](#production-checklist)
 
 ---
 
@@ -32,6 +34,23 @@ A production-grade email scheduling system built with Node.js/TypeScript on the 
 The system accepts a campaign creation request containing a list of recipient email addresses, a subject, a body, a scheduled start time, an optional delay between sends (seconds), and an optional hourly send limit. It writes each recipient as a separate row in PostgreSQL, enqueues each as a BullMQ delayed job in Redis keyed by a deterministic job ID, and processes them in a background worker. If the server is restarted before any job fires, a reconciliation pass on startup re-enqueues any jobs that were lost.
 
 The frontend is a Gmail-style single-page application with Google OAuth sign-in, a two-column dashboard (sidebar + email list), and a full-page compose screen.
+
+---
+
+## Features Implemented
+
+### Backend
+- **Scheduler**: Utilizes **BullMQ** backed by **Redis** for robust, cron-less job scheduling. Jobs are queued dynamically with specific delay timestamps.
+- **Persistence**: Gracefully handles server restarts. Data is persistently stored in PostgreSQL. If a server crashes, BullMQ resumes processing from Redis without dropping a single job.
+- **Rate Limiting**: Implements a highly scalable, atomic **Redis Lua script** to enforce hourly limits per sender and campaign. Jobs exceeding the limit are not dropped but cleanly rescheduled (`retryAfterMs`) to the next hour boundary.
+- **Concurrency**: Worker is configured to process multiple jobs simultaneously (`WORKER_CONCURRENCY=5`), ensuring high throughput without blocking the main thread.
+- **Idempotency**: Every email sent is guarded by an idempotency check in Postgres to guarantee no recipient ever receives the exact same email twice.
+
+### Frontend
+- **Login**: Secured via NextAuth using **real Google OAuth** integration.
+- **Dashboard**: Features a sleek, responsive sidebar layout cleanly separating Scheduled and Sent email views. Includes real-time polling to keep data synchronized without page reloads.
+- **Compose**: Rich text editor for drafting emails. Supports bulk recipient imports by directly extracting emails from uploaded `.csv` or `.txt` files using a powerful Regex parser.
+- **Data Tables**: Detailed table views with dynamic status badges, loading skeletons, and empty states. Beautifully renders HTML bodies into the expanded view.
 
 ---
 
@@ -459,12 +478,12 @@ REDIS_HOST="localhost"
 REDIS_PORT="6379"
 REDIS_PASSWORD=""
 
-# SMTP (Nodemailer)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_SECURE="false"
-SMTP_USER="your-smtp-user@gmail.com"
-SMTP_PASS="your-app-password"
+# Ethereal Email Setup (Fake SMTP)
+# Ethereal is a fake SMTP service used to safely test email delivery without spamming real inboxes.
+# Leave ETHEREAL_USER and ETHEREAL_PASS blank in your .env file. 
+# When the worker boots and attempts to send its first email, it will automatically generate a fresh, guaranteed-valid Ethereal test account and print the login credentials to the server logs.
+ETHEREAL_USER=""
+ETHEREAL_PASS=""
 
 # Worker settings
 MAX_RETRIES="3"
@@ -496,7 +515,26 @@ NEXT_PUBLIC_API_URL="http://localhost:3001"
 
 ---
 
-## Local Development
+## Running with Docker
+
+The entire application is fully containerized for seamless deployment. This is the **recommended** way to run the app.
+
+**1. Build and Start all containers**
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+**2. Access the Frontend** -> [http://localhost:3000](http://localhost:3000)
+
+**3. Access the Backend** -> [http://localhost:3001](http://localhost:3001)
+
+**4. View Live Logs (Rate limits & Ethereal credentials)**
+```bash
+docker compose -f docker-compose.prod.yml logs -f backend-worker
+```
+
+---
+
+## Local Development (Manual Setup)
 
 ### Prerequisites
 
