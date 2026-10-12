@@ -1,4 +1,4 @@
-#Email Job Scheduler
+# Email Job Scheduler
 
 A production-grade email scheduling system built with Node.js/TypeScript on the backend and Next.js 16 on the frontend. Emails are scheduled as BullMQ delayed jobs backed by Redis. No cron. No polling. No in-memory state. Every email survives a server restart.
 
